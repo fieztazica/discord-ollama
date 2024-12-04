@@ -7,7 +7,7 @@ import { UserCommand } from "../utils/index.js";
 export const PullModel: SlashCommand = {
     name: 'pull-model',
     description: 'pulls a model from the ollama model library',
-
+    disabled: true,
     // set available user options to pass to the command
     options: [
         {

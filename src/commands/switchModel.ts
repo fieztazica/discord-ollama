@@ -1,28 +1,35 @@
-import { ApplicationCommandOptionType, Client, CommandInteraction } from "discord.js";
-import { SlashCommand } from "../utils/commands.js";
-import { ollama } from "../client.js";
-import { ModelResponse } from "ollama";
-import { openConfig, UserCommand } from "../utils/index.js";
+import {
+    ApplicationCommandOptionType,
+    AutocompleteInteraction,
+    Client,
+    CommandInteraction,
+} from 'discord.js'
+import { SlashCommand } from '../utils/commands.js'
+import { ollama } from '../client.js'
+import { ModelResponse } from 'ollama'
+import { openConfig, UserCommand } from '../utils/index.js'
 
 export const SwitchModel: SlashCommand = {
     name: 'switch-model',
     description: 'switches current model to preferred model to use.',
-
+    disabled: true,
     // set available user options to pass to the command
     options: [
         {
             name: 'model-to-use',
             description: 'the name of the model to use',
             type: ApplicationCommandOptionType.String,
-            required: true
-        }
+            required: true,
+            autocomplete: true,
+        },
     ],
 
     // Switch user preferred model if available in local library
     run: async (client: Client, interaction: CommandInteraction) => {
         await interaction.deferReply()
 
-        const modelInput: string = interaction.options.get('model-to-use')!!.value as string
+        const modelInput: string = interaction.options.get('model-to-use')!!
+            .value as string
 
         // fetch channel and message
         const channel = await client.channels.fetch(interaction.channelId)
@@ -31,16 +38,19 @@ export const SwitchModel: SlashCommand = {
         try {
             // Phase 1: Set the model
             let switchSuccess = false
-            await ollama.list()
-            .then(response => {
+            await ollama.list().then((response) => {
                 for (const model in response.models) {
                     const currentModel: ModelResponse = response.models[model]
                     if (currentModel.name.startsWith(modelInput)) {
-                        openConfig(`${interaction.user.username}-config.json`, interaction.commandName, modelInput)
+                        openConfig(
+                            `${interaction.user.username}-config.json`,
+                            interaction.commandName,
+                            modelInput
+                        )
 
                         // successful switch
                         interaction.editReply({
-                            content: `Successfully switched to **${modelInput}** as the preferred model for ${interaction.user.username}.`
+                            content: `Successfully switched to **${modelInput}** as the preferred model for ${interaction.user.username}.`,
                         })
                         switchSuccess = true
                     }
@@ -51,26 +61,48 @@ export const SwitchModel: SlashCommand = {
 
             // Phase 2: Try to get it regardless
             interaction.editReply({
-                content: `Could not find **${modelInput}** in local model library, trying to pull it now...\n\nThis could take a few moments... Please be patient!`
+                content: `Could not find **${modelInput}** in local model library, trying to pull it now...\n\nThis could take a few moments... Please be patient!`,
             })
 
             await ollama.pull({
-                model: modelInput
+                model: modelInput,
             })
 
             // set model now that it exists
-            openConfig(`${interaction.user.username}-config.json`, interaction.commandName, modelInput)
+            openConfig(
+                `${interaction.user.username}-config.json`,
+                interaction.commandName,
+                modelInput
+            )
 
             // We got the model!
             interaction.editReply({
-                content: `Successfully added and set **${modelInput}** as your preferred model.`
+                content: `Successfully added and set **${modelInput}** as your preferred model.`,
             })
         } catch (error) {
             // could not resolve user model switch
             interaction.editReply({
-                content: `Unable to switch user preferred model to **${modelInput}**.\n\n${error}\n\nPossible solution is to run \`/pull-model ${modelInput}\` and try again.`
+                content: `Unable to switch user preferred model to **${modelInput}**.\n\n${error}\n\nPossible solution is to run \`/pull-model ${modelInput}\` and try again.`,
             })
             return
         }
-    }
+    },
+
+    autocomplete: async function (
+        client: Client,
+        interaction: AutocompleteInteraction
+    ) {
+        try {
+            await interaction.respond(
+                (
+                    await ollama.list()
+                ).models.map((model) => ({
+                    name: model.name,
+                    value: model.name,
+                }))
+            )
+        } catch (error) {
+            interaction.respond([])
+        }
+    },
 }

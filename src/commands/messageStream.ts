@@ -4,7 +4,7 @@ import { openConfig, SlashCommand, UserCommand } from '../utils/index.js'
 export const MessageStream: SlashCommand = {
     name: 'message-stream',
     description: 'change preference on message streaming from ollama. WARNING: can be very slow.',
-
+    disabled: true,
     // user option(s) for setting stream
     options: [
         {

@@ -4,6 +4,7 @@ import { openConfig, SlashCommand, UserCommand } from '../utils/index.js'
 export const MessageStyle: SlashCommand = {
     name: 'message-style',
     description: 'sets the message style to embed or normal',
+    disabled: true,
 
     // set available user options to pass to the command
     options: [
