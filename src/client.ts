@@ -5,16 +5,15 @@ import { UserMessage, registerEvents } from './utils/index.js'
 import Events from './events/index.js'
 import Keys from './keys.js'
 
-
 // initialize the client with the following permissions when logging in
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
+        GatewayIntentBits.MessageContent,
+    ],
+})
 
 // initialize connection to ollama container
 export const ollama = new Ollama({
@@ -22,14 +21,13 @@ export const ollama = new Ollama({
 })
 
 // Create Queue managed by Events
-const messageHistory: Queue<UserMessage> = new Queue<UserMessage>
+const messageHistory: Queue<UserMessage> = new Queue<UserMessage>()
 
 // register all events
 registerEvents(client, Events, messageHistory, ollama)
 
 // Try to log in the client
-await client.login(Keys.clientToken)
-.catch((error) => {
+await client.login(Keys.clientToken).catch((error) => {
     console.error('[Login Error]', error)
     process.exit(1)
 })
@@ -38,5 +36,18 @@ await client.login(Keys.clientToken)
 messageHistory.enqueue({
     role: 'assistant',
     content: `My name is ${client.user?.username}`,
-    images: []
+    images: [],
 })
+
+if (Keys.systemPrompt) {
+    const modelfile = `
+    FROM ${Keys.defaultModel}
+    SYSTEM \"${Keys.systemPrompt}\"
+    `
+    console.log(`[Ollama] Using system prompt: ${Keys.systemPrompt}`)
+
+    await ollama.create({
+        model: 'custom-discord-ollama',
+        modelfile,
+    })
+}

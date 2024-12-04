@@ -70,11 +70,6 @@ export async function normalMessage(
                         const functionResponse = functionToCall(
                             tool.function.arguments
                         )
-                        console.log(
-                            response.message.tool_calls,
-                            tool.function.arguments,
-                            functionResponse
-                        )
                         // if queue is full, remove the oldest message
                         while (msgHist.size() >= msgHist.capacity)
                             msgHist.dequeue()
